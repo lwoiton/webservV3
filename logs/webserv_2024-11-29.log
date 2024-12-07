@@ -1,0 +1,139 @@
+[23:49:16] [INFO] Webserv config: default.conf parsed successfully
+[23:49:16] [INFO] Listening on 127.0.0.1:8080 -> socket 5 (O_NONBLOCK | backlog 4096)
+[23:49:16] [INFO] Listening on 127.0.0.1:8083 -> socket 6 (O_NONBLOCK | backlog 4096)
+[23:49:16] [INFO] Server running...
+[23:49:35] [INFO] Connection 127.0.0.1:34230 -> socket 7 (O_NONBLOCK) accepted
+[23:49:35] [DEBUG] Request not complete!                                             (srcs/Connection.cpp:hasCompletedRequest:124)
+[23:49:35] [DEBUG] Parse State change to 'HEADERS'                                   (srcs/HTTPRequest.cpp:parseRequestLine:124)
+[23:49:35] [DEBUG] 
+=== HTTP Request ===
+GET / HTTP/1.1
+--- Headers ---
+
+--- Body ---
+Size: 0 bytes
+==================
+(srcs/HTTPRequest.cpp:print:880)
+[23:49:35] [DEBUG] Request not complete!                                             (srcs/Connection.cpp:hasCompletedRequest:124)
+[23:49:35] [DEBUG] Request not complete!                                             (srcs/Connection.cpp:hasCompletedRequest:124)
+[23:49:35] [DEBUG] 
+=== HTTP Request ===
+GET / HTTP/1.1
+--- Headers ---
+
+--- Body ---
+Size: 0 bytes
+==================
+(srcs/HTTPRequest.cpp:print:880)
+[23:49:35] [DEBUG] Request not complete!                                             (srcs/Connection.cpp:hasCompletedRequest:124)
+[23:49:35] [DEBUG] Request not complete!                                             (srcs/Connection.cpp:hasCompletedRequest:124)
+[23:49:35] [DEBUG] 
+=== HTTP Request ===
+GET / HTTP/1.1
+--- Headers ---
+
+--- Body ---
+Size: 0 bytes
+==================
+(srcs/HTTPRequest.cpp:print:880)
+[23:49:35] [DEBUG] Request not complete!                                             (srcs/Connection.cpp:hasCompletedRequest:124)
+[23:49:35] [DEBUG] Request not complete!                                             (srcs/Connection.cpp:hasCompletedRequest:124)
+[23:49:35] [DEBUG] 
+=== HTTP Request ===
+GET / HTTP/1.1
+--- Headers ---
+
+--- Body ---
+Size: 0 bytes
+==================
+(srcs/HTTPRequest.cpp:print:880)
+[23:49:35] [DEBUG] Request not complete!                                             (srcs/Connection.cpp:hasCompletedRequest:124)
+[23:49:35] [DEBUG] Request not complete!                                             (srcs/Connection.cpp:hasCompletedRequest:124)
+[23:49:35] [DEBUG] Parse State change to 'BODY_INIT'                                 (srcs/HTTPRequest.cpp:parseHeaders:226)
+[23:49:35] [DEBUG] 
+=== HTTP Request ===
+GET / HTTP/1.1
+--- Headers ---
+Accept-Encoding: gzip
+Host: 127.0.0.1:8080
+User-Agent: Go-http-client/1.1
+
+--- Body ---
+Size: 0 bytes
+==================
+(srcs/HTTPRequest.cpp:print:880)
+[23:49:35] [DEBUG] determineBodyType called                                          (srcs/HTTPRequest.cpp:determineBodyType:240)
+[23:49:35] [DEBUG] No body indicators found - setting NO_BODY type                   (srcs/HTTPRequest.cpp:determineBodyType:291)
+[23:49:35] [DEBUG] Parse State change to 'COMPLETE'                                  (srcs/HTTPRequest.cpp:determineBodyType:293)
+[23:49:35] [DEBUG] Reaquest complete!                                                (srcs/Connection.cpp:hasCompletedRequest:121)
+[23:49:35] [DEBUG] 
+=== HTTP Response ===
+HTTP/1.1 200 OK
+--- Headers ---
+Connection: keep-alive
+Content-Length: 2283
+Content-Type: text/html
+Host: 127.0.0.1:8080
+
+--- Body ---
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>C++ Webserver Project</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <nav>
+        <ul>
+            <li><a href="/" class="nav-button">Home</a></li>
+            <li><a href="/docs" class="nav-button">Documentation</a></li>
+            <li><a href="/features" class="nav-button">Features</a></li>
+            <li><a href="/uploads.html" class="nav-button">Uploads</a></li>
+            <li><a href="/cgi.html" class="nav-button">CGI</a></li>
+            <li><a href="/userdb.html" class="nav-button">UserDB</a></li>
+            <li><a href="/about" class="nav-button">About</a></li>
+        </ul>
+    </nav>
+
+    <div class="hero">
+        <div class="hero-content">
+            <h1>C++ HTTP Server Project</h1>
+            <p>A modern web server implementation in C++98</p>
+            <a href="/docs" class="cta">View Documentation</a>
+        </div>
+    </div>
+
+    <div class="features">
+        <div class="feature-card">
+            <h3>HTTP/1.1 Compliant</h3>
+            <p>Full implementation of GET, POST, and DELETE methods with proper status codes and headers.</p>
+        </div>
+        <div class="feature-card">
+            <h3>CGI Support</h3>
+            <p>Execute dynamic content through CGI scripts, supporting various languages like PHP and Python.</p>
+        </div>
+        <div class="feature-card">
+            <h3>File Operations</h3>
+            <p>Secure file uploads, downloads, and directory listing capabilities with configurable permissions.</p>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>About the Project</h2>
+        <p>This web server is built as a learning project to understand HTTP protocols, network programming, and C++ development. It implements core features of HTTP/1.1 while maintaining high performance and stability.</p>
+        
+        <h2>Key Features</h2>
+        <ul>
+            <li>Non-blocking I/O operations</li>
+            <li>Configurable virtual hosts</li>
+            <li>Custom error pages</li>
+            <li>Directory listing</li>
+            <li>File upload handling</li>
+        </ul>
+    </div>
+</body>
+</html>
+==================
+(srcs/HTTPResponse.cpp:print:244)

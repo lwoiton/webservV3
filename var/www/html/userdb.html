@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Database Management</title>
+</head>
+<body>
+    <h1>User Database Management</h1>
+    
+    <!-- Form to request all users -->
+    <form action="/users" method="GET">
+        <button type="submit">Show All Users</button>
+    </form>
+
+    <h2>User List</h2>
+    <table border="0">
+        <tr>
+            <th>First Name</th>
+            <th>Last Name</th>
+            <th>Username</th>
+            <th>Email</th>
+            <th>Age</th>
+        </tr>
+        <!-- This section would be populated by your server with actual user data -->
+    </table>
+
+    <h2>User Management Options:</h2>
+    <ul>
+        <li>
+            <form action="/create_user_form.html" method="GET">
+                <button type="submit">Create New User</button>
+            </form>
+        </li>
+        <li>
+            <form action="/delete_user.html" method="GET">
+                <button type="submit">Delete User</button>
+            </form>
+        </li>
+        <li>
+            <form action="/get_user_details_form.html" method="GET">
+                <button type="submit">Get User Details</button>
+            </form>
+        </li>
+    </ul>
+
+    <form action="/" method="GET">
+        <button type="submit">Back to Home</button>
+    </form>
+</body>
+</html>

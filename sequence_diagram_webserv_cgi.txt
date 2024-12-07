@@ -1,0 +1,59 @@
+title Webserv including CGI
+participant Webserv
+activate Webserv
+Webserv->*EventLoop:run()
+activate EventLoop
+EventLoop->*ListeningSocket:handleRead()
+activate ListeningSocket
+ListeningSocket->*ClientConnection: new ClientConnection()
+activate ClientConnection
+
+create HTTPRequest
+ClientConnection->HTTPRequest: new HTTPRequest()
+loop while(state != WRITING_RESPONSE && Client != disconnected)
+EventLoop->ClientConnection: handleRead() [recv()]
+ClientConnection->HTTPRequest: parse(data)
+activate HTTPRequest
+end
+
+HTTPRequest-->ClientConnection: state == COMPLETE
+deactivate HTTPRequest
+
+alt if normal request
+ClientConnection->RequestProcessor: process()
+activate RequestProcessor
+RequestProcessor->*HTTPResponse: create
+RequestProcessor-->ClientConnection: response
+deactivate RequestProcessor
+
+else
+ClientConnection->CGIProcessor: handleCGIRequest()
+activate CGIProcessor
+CGIProcessor->*CGIPipe: create input/output pipes
+CGIProcessor->*Environment: setup env vars
+create CGI Process
+CGIProcessor->CGI Process: fork() & execve()
+activate CGI Process
+loop while data available
+CGIProcessor->CGIPipe: write request to CGI
+CGIPipe->CGI Process: pipe data
+note over CGI Process: execve(CGI)
+CGI Process->CGIPipe: write response
+
+CGIPipe->CGIProcessor: read response
+end
+CGIProcessor->HTTPResponse: create response from CGI output
+CGIProcessor-->ClientConnection: return response
+deactivate CGIProcessor
+destroy CGI Process
+destroy CGIPipe
+end
+
+ClientConnection->EventLoop:modifySocket(EPOLLOUT)
+loop while(!_writeBuf.empty())
+EventLoop->ClientConnection:handleWrite() [send()]
+end
+
+ClientConnection->HTTPRequest:reset()
+ClientConnection->EventLoop:modifySocket(EPOLLIN)
+destroy HTTPRequest

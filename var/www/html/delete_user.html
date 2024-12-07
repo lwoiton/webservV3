@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delete User</title>
+</head>
+<body>
+    <h1>Delete User</h1>
+    <form id="deleteUserForm" onsubmit="return sendDeleteRequest(event)">
+        <label for="username">Username:</label>
+        <input type="text" id="username" name="username" required>
+        <button type="submit">Delete User</button>
+    </form>
+
+    <script>
+        function sendDeleteRequest(event) {
+            event.preventDefault(); // Prevent form from submitting traditionally
+
+            const username = document.getElementById("username").value;
+            const url = `/user?username=${encodeURIComponent(username)}`;
+
+            fetch(url, {
+                method: 'DELETE',
+            })
+            .then(response => {
+                if (response.ok) {
+                    alert("User deleted successfully.");
+                } else {
+                    alert("Failed to delete user.");
+                }
+            })
+            .catch(error => {
+                console.error("Error:", error);
+                alert("An error occurred.");
+            });
+        }
+    </script>
+</body>
+</html>

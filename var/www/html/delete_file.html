@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delete Resource</title>
+    <script>
+        async function deleteResource() {
+            const resourcePath = document.getElementById("resourcePath").value;
+
+            // Perform a DELETE request using Fetch API
+            const response = await fetch(`/delete${resourcePath}`, {
+                method: 'DELETE'
+            });
+
+            // Check the response status
+            if (response.ok) {
+                const message = await response.text();
+                alert("Success: " + message);
+            } else {
+                alert("Error: " + response.status + " " + response.statusText);
+            }
+        }
+    </script>
+</head>
+<body>
+    <h1>Delete a Resource</h1>
+    <label for="resourcePath">Resource Path (e.g., /example.txt):</label><br>
+    <input type="text" id="resourcePath" name="resourcePath" required><br><br>
+    <button onclick="deleteResource()">Delete Resource</button>
+</body>
+</html>

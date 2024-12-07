@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>File Manager - Webserver</title>
+    <link rel="stylesheet" href="/styles.css">
+    <style>
+        .upload-container {
+            margin-top: 2rem;
+            background-color: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+        }
+
+        .upload-bar {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            background: var(--light-bg);
+            border: 2px dashed #e2e8f0;
+            border-radius: 0.5rem;
+            padding: 1rem;
+        }
+
+        .file-input-wrap {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .custom-file-input {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.25rem;
+            cursor: pointer;
+        }
+
+        .file-list-container {
+            margin-top: 2rem;
+            background-color: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+        }
+
+        .file-list {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .file-list th, .file-list td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .file-list th {
+            font-weight: 500;
+            color: var(--secondary-color);
+        }
+
+        .file-name {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-color);
+            text-decoration: none;
+        }
+
+        .delete-btn {
+            padding: 0.5rem;
+            background: #fee2e2;
+            color: #dc2626;
+            border: none;
+            border-radius: 0.25rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .delete-btn:hover {
+            background: #fecaca;
+        }
+
+        .status-message {
+            display: none;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1rem;
+            border-radius: 0.25rem;
+            margin-top: 1rem;
+        }
+
+        .status-success {
+            background-color: #dcfce7;
+            color: #166534;
+        }
+
+        .status-error {
+            background-color: #fee2e2;
+            color: #dc2626;
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <ul>
+            <li><a href="/" class="nav-button">Home</a></li>
+            <li><a href="/docs" class="nav-button">Documentation</a></li>
+            <li><a href="/features" class="nav-button">Features</a></li>
+            <li><a href="/uploads.html" class="nav-button">Uploads</a></li>
+            <li><a href="/cgi.html" class="nav-button">CGI</a></li>
+            <li><a href="/userdb.html" class="nav-button">UserDB</a></li>            
+            <li><a href="/about" class="nav-button">About</a></li>
+        </ul>
+    </nav>
+
+    <div class="hero">
+        <div class="hero-content">
+            <h1>File Manager</h1>
+            <p>Upload and manage your files with ease</p>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="upload-container">
+            <form id="uploadForm" class="upload-bar">
+                <div class="file-input-wrap">
+                    <label class="custom-file-input">
+                        <img src="/images/paperclip.svg" alt="Attach" width="20" height="20">
+                        <span>Select File</span>
+                        <input type="file" name="file" id="fileInput" style="display: none;">
+                    </label>
+                    <span class="selected-file">No file selected</span>
+                </div>
+                <button type="submit" class="cta">Upload File</button>
+            </form>
+            <div id="uploadStatus" class="status-message">
+                <img src="/images/checkmark-20.svg" alt="Success" width="20" height="20">
+                <span id="statusMessage"></span>
+            </div>
+        </div>
+
+        <div class="file-list-container">
+            <table class="file-list">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Size</th>
+                        <th>Modified</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="fileList">
+                    <!-- Files will be listed here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const fileInput = document.getElementById('fileInput');
+            const selectedFile = document.querySelector('.selected-file');
+            const uploadForm = document.getElementById('uploadForm');
+            const uploadStatus = document.getElementById('uploadStatus');
+            const statusMessage = document.getElementById('statusMessage');
+
+            // File selection handler
+            fileInput.addEventListener('change', () => {
+                selectedFile.textContent = fileInput.files[0] ? fileInput.files[0].name : 'No file selected';
+            });
+
+            // Form submission handler
+            uploadForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                if (!fileInput.files[0]) {
+                    showStatus('Please select a file first', false);
+                    return;
+                }
+
+                try {
+                    const formData = new FormData();
+                    formData.append('file', fileInput.files[0]);
+
+                    const response = await fetch('/upload', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    if (!response.ok) throw new Error('Upload failed');
+
+                    showStatus('File uploaded successfully!', true);
+                    fileInput.value = '';
+                    selectedFile.textContent = 'No file selected';
+                    fetchFileList();
+                } catch (error) {
+                    showStatus('Upload failed: ' + error.message, false);
+                }
+            });
+
+            // Show status message
+            function showStatus(message, isSuccess) {
+                statusMessage.textContent = message;
+                uploadStatus.className = 'status-message ' + 
+                    (isSuccess ? 'status-success' : 'status-error');
+                uploadStatus.style.display = 'flex';
+                setTimeout(() => {
+                    uploadStatus.style.display = 'none';
+                }, 5000);
+            }
+
+            // Fetch and display file list
+            async function fetchFileList() {
+                try {
+                    const response = await fetch('/files_list');  // Server endpoint for file list
+                    const files = await response.json();
+                    
+                    const fileList = document.getElementById('fileList');
+                    fileList.innerHTML = files.map(file => `
+                        <tr>
+                            <td>
+                                <a href="/files/${encodeURIComponent(file.name)}" class="file-name">
+                                    <img src="/images/paperclip.svg" alt="File" width="16" height="16">
+                                    ${file.name}
+                                </a>
+                            </td>
+                            <td>${formatFileSize(file.size)}</td>
+                            <td>${new Date(file.modified).toLocaleDateString()}</td>
+                            <td>
+                                <button class="delete-btn" onclick="deleteFile('${file.name}')">
+                                    ✕
+                                </button>
+                            </td>
+                        </tr>
+                    `).join('');
+                } catch (error) {
+                    showStatus('Failed to load file list: ' + error.message, false);
+                }
+            }
+
+            // Format file size
+            function formatFileSize(bytes) {
+                const units = ['B', 'KB', 'MB', 'GB'];
+                let size = bytes;
+                let unitIndex = 0;
+                
+                while (size >= 1024 && unitIndex < units.length - 1) {
+                    size /= 1024;
+                    unitIndex++;
+                }
+                
+                return `${size.toFixed(1)} ${units[unitIndex]}`;
+            }
+
+            // Delete file handler
+            window.deleteFile = async (filename) => {
+                if (!confirm(`Are you sure you want to delete ${filename}?`)) return;
+                
+                try {
+                    const response = await fetch(`/files/${encodeURIComponent(filename)}`, {
+                        method: 'DELETE'
+                    });
+                    
+                    if (!response.ok) throw new Error('Delete failed');
+                    
+                    showStatus('File deleted successfully!', true);
+                    fetchFileList();
+                } catch (error) {
+                    showStatus('Delete failed: ' + error.message, false);
+                }
+            };
+
+            // Initial file list load
+            fetchFileList();
+        });
+    </script>
+</body>
+</html>

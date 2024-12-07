@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Operations - C++ Webserver</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <nav>
+        <ul>
+            <li><a href="/" class="nav-button">Home</a></li>
+            <li><a href="/docs" class="nav-button">Documentation</a></li>
+            <li><a href="/features" class="nav-button">Features</a></li>
+            <li><a href="/uploads.html" class="nav-button">Uploads</a></li>
+            <li><a href="/cgi.html" class="nav-button">CGI</a></li>
+            <li><a href="/userdb.html" class="nav-button">UserDB</a></li>            
+            <li><a href="/about" class="nav-button">About</a></li>
+        </ul>
+    </nav>
+
+    <div class="hero">
+        <div class="hero-content">
+            <h1>CGI Operations</h1>
+            <p>Upload, Save, Open files; Get and Post with UserDB</p>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="features">
+            <div class="feature-card">
+                <h3>CGI Get: Hello Form</h3>
+                <form action = "/cgi-bin/hello_get.py" method = "get">
+                    First Name: <input type = "text" name = "first_name">  <br />
+                    Last Name: <input type = "text" name = "last_name" />
+                    <input type = "submit" value = "Submit" />
+                 </form>                
+            </div>
+
+            <div class="feature-card">
+                <h3>CGI Post: Hello Form</h3>
+                <form action = "/cgi-bin/hello_get.py" method = "post">
+                    First Name: <input type = "text" name = "first_name">  <br />
+                    Last Name: <input type = "text" name = "last_name" />
+                    <input type = "submit" value = "Submit" />
+                 </form>                
+            </div>    
+            <div class="feature-card">
+                <h3>CGI Post: File Upload Form</h3>
+                <form enctype = "multipart/form-data" action = "save_file.py" method = "post">
+                    <p>File: <input type = "file" name = "filename" /></p>
+                    <p><input type = "submit" value = "Upload" /></p>
+                </form>               
+            </div>          
+        </div>
+    </div>
+	<script src="/js/fileops.js"></script>
+</body>
+</html>

@@ -1,0 +1,36 @@
+participant Webserv
+activate Webserv
+Webserv->*EventLoop:run()
+participant EventLoop
+activate EventLoop
+
+EventLoop->*ListeningSocket:handleRead()
+activate ListeningSocket
+ListeningSocket->*ClientConnection: new ClientConnection()
+activate ClientConnection
+create HTTPRequest
+loop handleRead() while(state != WRITING_RESPONSE && Client != disconnected)
+EventLoop->ClientConnection: handleRead() [recv()]
+ClientConnection->HTTPRequest: parse(data)
+activate HTTPRequest
+end
+HTTPRequest-->ClientConnection: state == COMPLETE
+note over ClientConnection: Request complete \n start processing
+ClientConnection -> RequestProcessor: process()
+activate RequestProcessor
+RequestProcessor->*HTTPResponse: <<create>>
+note over RequestProcessor: Route Request
+RequestProcessor<->HTTPResponse: setHeaders()\nsetBody()
+RequestProcessor-->ClientConnection: response
+deactivate RequestProcessor
+ClientConnection<->HTTPResponse:serialize()
+destroysilent HTTPResponse
+note over ClientConnection: queueResponse()
+ClientConnection->EventLoop:modifySocket(EPOLLOUT)
+loop handleWrite() while(!_writeBuf.empty())
+EventLoop->ClientConnection:handleWrite()
+end
+ClientConnection->HTTPRequest:reset()
+deactivate HTTPRequest
+ClientConnection->EventLoop:modifySocket(EPOLLIN)
+destroysilent HTTPRequest
