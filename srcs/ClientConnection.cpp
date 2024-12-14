@@ -6,7 +6,7 @@
 /*   By: lwoiton <lwoiton@student.42prague.com>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/30 19:46:31 by lwoiton           #+#    #+#             */
-/*   Updated: 2024/12/02 18:27:43 by lwoiton          ###   ########.fr       */
+/*   Updated: 2024/12/12 00:23:11 by lwoiton          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -34,14 +34,11 @@ ClientConnection::~ClientConnection()
 
 bool ClientConnection::handleRead()
 {
+	if (_request.shouldKeepAlive())
+		_keepAlive = true;
 	if (_state == PROCESSING_CGI)
 		return handleCGIRead();
 	return handleClientRead();
-}
-
-bool	ClientConnection::handleCGIRead()
-{
-	return _cgiOutputPipe->handleRead();
 }
 
 bool	ClientConnection::handleClientRead()
@@ -52,30 +49,28 @@ bool	ClientConnection::handleClientRead()
 	if (bytesRead > 0)
 	{
 		_readBuffer.insert(_readBuffer.end(), buffer, buffer + bytesRead);
-	
-		// Process based on current state
-		switch (_state)
+		try
 		{
-			case READING_HEADERS:
-				if (processHeaders())
-					return true;
-				break;
-				
-			case READING_BODY:
-				if (_chunkedTransfer)
+			_request.parse(_readBuffer);
+			if (_request.getState() == HTTPRequest::COMPLETE)
+			{
+				if (_request.isCGI())
 				{
-					if (processChunkedBody())
-						return true;
+					_state = PROCESSING_CGI;
+					setupCGI();
 				}
 				else
 				{
-					if (processBody())
-						return true;
+					// Process request
+					_state = SENDING_RESPONSE;
 				}
-				break;
-			default:
-				break;
+			}
 		}
+		catch(const std::exception& e)
+		{
+			std::cerr << e.what() << '\n';
+		}
+		
 	}
 	else if (bytesRead == 0)
 	{
@@ -83,6 +78,40 @@ bool	ClientConnection::handleClientRead()
 		return false;
 	}
     return true;
+}
+
+bool	ClientConnection::handleCGIRead()
+{
+	if (_cgiPipe->isReadEnd())
+	{
+		char buffer[4096];
+		ssize_t bytesRead = read(_cgiPipe->getFd(), buffer, sizeof(buffer));
+		if (bytesRead > 0)
+		{
+			_cgiPipe->write(buffer, bytesRead);
+		}
+		else if (bytesRead == 0)
+		{
+			_cgiPipe->closeWrite();
+		}
+		else if (errno != EAGAIN)
+		{
+			// Error reading from CGI pipe
+			return false;
+		}
+	}
+	return true;
+}
+
+bool	ClientConnection::setupCGI()
+{
+	_state = PROCESSING_CGI;
+
+	// Create pipes for CGI process
+	_cgi.inputPipe = new CGIPipe(*this, false);
+	_cgi.outputPipe = new CGIPipe(*this, true);
+
+	// Process CGI request through new CGIProcessor
 }
 
 bool ClientConnection::handleWrite()
@@ -101,11 +130,12 @@ bool ClientConnection::handleWrite()
 			if (_keepAlive)
 			{
 				reset();
-				return true;
+				return true; // Keep Connection open
 			}
 			return false;  // Close connection
 		}
 	}
+	return true;
 }
 
 bool ClientConnection::wantsToRead() const
@@ -140,67 +170,22 @@ std::string ClientConnection::getInfo() const
     return ss.str();
 }
 
-bool ClientConnection::processHeaders()
-{
-    // Look for end of headers (CRLFCRLF)
-    std::vector<char>::iterator it = std::search(
-        _readBuffer.begin(), _readBuffer.end(),
-        "\r\n\r\n", "\r\n\r\n" + 4);
-
-    if (it != _readBuffer.end())
-    {
-        // Found end of headers
-        size_t headerLength = it - _readBuffer.begin() + 4;
-        
-        // Process headers here...
-        // Set _contentLength, _chunkedTransfer, _keepAlive based on headers
-        
-        // Remove processed headers from buffer
-        _readBuffer.erase(_readBuffer.begin(), _readBuffer.begin() + headerLength);
-        
-        // Determine next state
-        if (_contentLength > 0 || _chunkedTransfer)
-        {
-            _state = READING_BODY;
-            return processBody();  // Process any remaining data
-        }
-        else
-        {
-            _state = PROCESSING;
-            return true;
-        }
-    }
-    return true;  // Need more data
-}
-
-bool ClientConnection::processBody()
-{
-    if (!_chunkedTransfer)
-    {
-        _bytesRead += _readBuffer.size();
-        
-        if (_bytesRead >= _contentLength)
-        {
-            _state = PROCESSING;
-            return true;
-        }
-    }
-    return true;
-}
-
-bool ClientConnection::processChunkedBody()
-{
-    // Chunked transfer handling...
-    // This will need proper implementation according to RFC 7230
-    return true;
-}
-
 void ClientConnection::reset()
 {
-    _state = READING_HEADERS;
+    _state = READING_REQUEST;
     _contentLength = 0;
     _bytesRead = 0;
     _chunkedTransfer = false;
     _readBuffer.clear();
     _writeBuffer.clear();
+	if (_cgi.inputPipe)
+	{
+		delete _cgi.inputPipe;
+		_cgi.inputPipe = NULL;
+	}
+	if (_cgi.outputPipe)
+	{
+		delete _cgi.outputPipe;
+		_cgi.outputPipe = NULL;
+	}
 }

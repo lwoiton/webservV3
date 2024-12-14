@@ -6,7 +6,7 @@
 /*   By: lwoiton <lwoiton@student.42prague.com>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/30 00:39:40 by lwoiton           #+#    #+#             */
-/*   Updated: 2024/12/03 00:34:41 by lwoiton          ###   ########.fr       */
+/*   Updated: 2024/12/11 12:38:19 by lwoiton          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,6 +20,7 @@
 #include <iostream>
 
 #include "IOHandler.hpp"
+#include "Logger.hpp"
 
 
 /**

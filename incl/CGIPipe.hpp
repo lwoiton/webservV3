@@ -6,7 +6,7 @@
 /*   By: lwoiton <lwoiton@student.42prague.com>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/30 18:39:58 by lwoiton           #+#    #+#             */
-/*   Updated: 2024/11/30 20:08:22 by lwoiton          ###   ########.fr       */
+/*   Updated: 2024/12/12 01:08:23 by lwoiton          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,6 +29,8 @@ class CGIPipe : public IOHandler
 		// Constructor takes a reference to parent and specifies if this is read or write end
 		CGIPipe(ClientConnection& parent, bool isReadEnd);
 		~CGIPipe();
+		
+		static int createPipe(bool isReadEnd);
 
 		// IOHandler interface
 		virtual bool handleRead();
@@ -36,19 +38,10 @@ class CGIPipe : public IOHandler
 		virtual bool wantsToRead() const;
 		virtual bool wantsToWrite() const;
 		virtual int getFd() const;
-
-		// Pipe operations
-		size_t write(const char* data, size_t len);
-		void closeWrite();
-		bool isReadEnd() const;
-		bool hasData() const;
 		
-		// Access to buffer for parent connection
-		const std::vector<char>& getBuffer() const;
-		void clearBuffer();
-
 	private:
-		int _fd;
+		int _fd; // The file descriptor for webserv to read/write
+		int _otherEnd; // The other end of the pipe towards the CGI process
 		ClientConnection& _parent;
 		bool _isReadEnd;
 		std::vector<char> _buffer;

@@ -6,7 +6,7 @@
 /*   By: lwoiton <lwoiton@student.42prague.com>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/30 17:49:38 by lwoiton           #+#    #+#             */
-/*   Updated: 2024/12/03 00:29:28 by lwoiton          ###   ########.fr       */
+/*   Updated: 2024/12/11 12:38:05 by lwoiton          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -109,6 +109,7 @@ void	EventLoop::run()
 			}
 			catch (const std::exception& e) {
 				// Log error and remove handler
+				LOG_ERROR("Error handling I/O event: " << e.what());
 				removeHandler(handler);
 			}
 		}

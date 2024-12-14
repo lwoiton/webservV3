@@ -6,7 +6,7 @@
 /*   By: lwoiton <lwoiton@student.42prague.com>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/30 18:38:02 by lwoiton           #+#    #+#             */
-/*   Updated: 2024/12/04 16:30:55 by lwoiton          ###   ########.fr       */
+/*   Updated: 2024/12/11 23:28:49 by lwoiton          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,6 +23,10 @@
 # include "IOHandler.hpp"
 # include "CGIPipe.hpp"
 # include "HTTPRequest.hpp"
+# include "HTTPResponse.hpp"
+# include "Logger.hpp"
+# include "TempFile.hpp"
+# include "CGIProcessor.hpp"
 
 class ClientConnection : public IOHandler
 {
@@ -46,6 +50,7 @@ class ClientConnection : public IOHandler
 	private:
 		enum State {
 			READING_REQUEST,
+			PROCESSING_REQUEST,
 			PROCESSING_CGI,
 			SENDING_RESPONSE,
 		};
@@ -73,16 +78,21 @@ class ClientConnection : public IOHandler
 		size_t          _bytesWritten;
 		
 		// CGI handling
-		CGIPipe*			_cgiInputPipe;
-		CGIPipe*			_cgiOutputPipe;
-		pid_t				_cgiChildPid;
-		std::vector<char>	_cgiInputBuffer;   // Data to send to CGI
-		std::vector<char>	_cgiOutputBuffer;  // Data received from CGI
+		struct CGI
+		{
+			CGIPipe*			inputPipe;
+			CGIPipe*			outputPipe;
+			
+			pid_t				childPid;
+			std::vector<char>	inputBuffer;
+			std::vector<char>	outputBuffer;
+		} 				_cgi;
+		bool	setupCGI();
 		
 		// Helper methods
-		bool processRequest();
-		bool processCGI();
-		void reset();
+		bool	handleClientRead();
+		bool	handleCGIRead();
+		void	reset();
 
 		// Prevent copying
 		ClientConnection(const ClientConnection&);
