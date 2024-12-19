@@ -6,7 +6,7 @@
 /*   By: lwoiton <lwoiton@student.42prague.com>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/23 01:13:09 by lwoiton           #+#    #+#             */
-/*   Updated: 2024/11/29 22:34:46 by lwoiton          ###   ########.fr       */
+/*   Updated: 2024/12/18 17:36:53 by lwoiton          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,6 +26,11 @@ HTTPResponse::~HTTPResponse()
 {
 	delete _tempFile;
 	_tempFile = NULL;
+}
+
+HTTPResponse::ResponseState	HTTPResponse::getState() const
+{
+	return (_state);
 }
 
 void HTTPResponse::setStatus(int code)
@@ -61,7 +66,7 @@ void HTTPResponse::deleteHeader(const std::string& key)
 	setHeader("Server", "webserv/1.0");
 } */
 
-void	HTTPResponse::setBody(const std::string& body)
+void	HTTPResponse::setBody(const std::vector<char> &body)
 {
 	if (body.length() > MEMORY_THRESHOLD)
 	{

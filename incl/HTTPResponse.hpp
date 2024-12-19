@@ -6,7 +6,7 @@
 /*   By: lwoiton <lwoiton@student.42prague.com>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/22 22:27:27 by lwoiton           #+#    #+#             */
-/*   Updated: 2024/11/29 23:49:03 by lwoiton          ###   ########.fr       */
+/*   Updated: 2024/12/18 17:37:09 by lwoiton          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,11 +29,17 @@ class HTTPResponse
 	public:
 		HTTPResponse();
 		~HTTPResponse();
+		enum ResponseState {
+			CREATING,
+			SENDING,
+			COMPLETE
+		};
+		ResponseState 		getState() const;
 		void		setStatus(int status);
 		void		setHeader(const std::string &key, const std::string &value);
 		void		deleteHeader(const std::string& key);
-		void		setBody(const std::string &body);
-		std::string getBody() const;
+		void		setBody(const std::vector<char> &body);
+		std::vector<char>& getBody() const;
 		std::string getHttpDate();
 		std::string	serialize() const;
 		size_t		getBodySize() const;
@@ -44,13 +50,14 @@ class HTTPResponse
 	private:
 		static const size_t					MEMORY_THRESHOLD = 1024 * 1024; // 1MB
     	static const size_t					CHUNK_SIZE; // 8KB chunks for transfer
+		ResponseState						_state;
     	TempFile*							_tempFile;
     	bool								_usingTempFile;
     	size_t								_readOffset;
     	std::vector<char>					_sendBuffer;
 		int									_statusCode;
 		std::map<std::string, std::string>	_headers;
-		std::string							_body;
+		std::vector<char>					_body;
 		size_t								_bodySize;
 		std::string							getStatusText() const;
 		void								setEssentialHeaders();

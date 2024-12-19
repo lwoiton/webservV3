@@ -6,7 +6,7 @@
 /*   By: lwoiton <lwoiton@student.42prague.com>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/30 18:38:02 by lwoiton           #+#    #+#             */
-/*   Updated: 2024/12/11 23:28:49 by lwoiton          ###   ########.fr       */
+/*   Updated: 2024/12/17 15:04:25 by lwoiton          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -50,7 +50,6 @@ class ClientConnection : public IOHandler
 	private:
 		enum State {
 			READING_REQUEST,
-			PROCESSING_REQUEST,
 			PROCESSING_CGI,
 			SENDING_RESPONSE,
 		};
@@ -87,7 +86,7 @@ class ClientConnection : public IOHandler
 			std::vector<char>	inputBuffer;
 			std::vector<char>	outputBuffer;
 		} 				_cgi;
-		bool	setupCGI();
+		void	setupCGI();
 		
 		// Helper methods
 		bool	handleClientRead();

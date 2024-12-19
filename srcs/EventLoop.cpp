@@ -6,7 +6,7 @@
 /*   By: lwoiton <lwoiton@student.42prague.com>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/30 17:49:38 by lwoiton           #+#    #+#             */
-/*   Updated: 2024/12/11 12:38:05 by lwoiton          ###   ########.fr       */
+/*   Updated: 2024/12/18 17:49:16 by lwoiton          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -90,7 +90,7 @@ void	EventLoop::run()
 				}
 				
 				// Handle read events
-				if (events[i].events & EPOLLIN && handler->wantsToRead()) {
+				if (events[i].events & EPOLLIN) {
 					if (!handler->handleRead()) {
 						removeHandler(handler);
 						continue;
@@ -99,7 +99,7 @@ void	EventLoop::run()
 				}
 				
 				// Handle write events
-				if (events[i].events & EPOLLOUT && handler->wantsToWrite()) {
+				if (events[i].events & EPOLLOUT) {
 					if (!handler->handleWrite()) {
 						removeHandler(handler);
 						continue;
@@ -122,9 +122,9 @@ void	EventLoop::updateHandlerEvents(IOHandler* handler)
 	ev.data.ptr = handler;
 	ev.events = 0;   // We need to use level-triggered mode because of the subject
 	
-	if (handler->wantsToRead())
+	if (handler->wantsToRead()) // Should be clearly handled by state management
 		ev.events |= EPOLLIN;
-	if (handler->wantsToWrite())
+	if (handler->wantsToWrite()) // Should be clearly handled by state management
 		ev.events |= EPOLLOUT;
 		
 	epoll_ctl(_epollFd, EPOLL_CTL_MOD, handler->getFd(), &ev);

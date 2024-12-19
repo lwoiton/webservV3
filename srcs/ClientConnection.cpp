@@ -6,7 +6,7 @@
 /*   By: lwoiton <lwoiton@student.42prague.com>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/30 19:46:31 by lwoiton           #+#    #+#             */
-/*   Updated: 2024/12/12 00:23:11 by lwoiton          ###   ########.fr       */
+/*   Updated: 2024/12/18 17:51:12 by lwoiton          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -34,8 +34,8 @@ ClientConnection::~ClientConnection()
 
 bool ClientConnection::handleRead()
 {
-	if (_request.shouldKeepAlive())
-		_keepAlive = true;
+	if (!_request.shouldKeepAlive())
+		_keepAlive = false;
 	if (_state == PROCESSING_CGI)
 		return handleCGIRead();
 	return handleClientRead();
@@ -74,36 +74,13 @@ bool	ClientConnection::handleClientRead()
 	}
 	else if (bytesRead == 0)
 	{
-		// Client closed connection
+		// Client closed connection -> EventLoop will handle removal of the epoll instance and the client instance through IOHnadler by returning false here.
 		return false;
 	}
     return true;
 }
 
-bool	ClientConnection::handleCGIRead()
-{
-	if (_cgiPipe->isReadEnd())
-	{
-		char buffer[4096];
-		ssize_t bytesRead = read(_cgiPipe->getFd(), buffer, sizeof(buffer));
-		if (bytesRead > 0)
-		{
-			_cgiPipe->write(buffer, bytesRead);
-		}
-		else if (bytesRead == 0)
-		{
-			_cgiPipe->closeWrite();
-		}
-		else if (errno != EAGAIN)
-		{
-			// Error reading from CGI pipe
-			return false;
-		}
-	}
-	return true;
-}
-
-bool	ClientConnection::setupCGI()
+void	ClientConnection::setupCGI()
 {
 	_state = PROCESSING_CGI;
 
@@ -112,6 +89,26 @@ bool	ClientConnection::setupCGI()
 	_cgi.outputPipe = new CGIPipe(*this, true);
 
 	// Process CGI request through new CGIProcessor
+	_cgi.childPid = fork();
+	if (_cgi.childPid == 0)
+	{
+		//child Process
+		//setup environment , redirect stdin/stdout
+		//execve
+		exit(1);
+	}
+	else if (_cgi.childPid > 0)
+	{
+		//parent process
+		//close unused pipe ends
+		//set up IOHandlers for pipes
+		//set up signal handler for SIGCHLD
+	}
+	else
+	{
+		throw HTTPError(500, "Failed to fork CGI process");
+	}
+	
 }
 
 bool ClientConnection::handleWrite()
@@ -125,7 +122,7 @@ bool ClientConnection::handleWrite()
 		_writeBuffer.erase(_writeBuffer.begin(), 
 							_writeBuffer.begin() + bytesWritten);
 		
-		if (_writeBuffer.empty() && _state == WRITING_RESPONSE)
+		if (_writeBuffer.empty() && _state == SENDING_RESPONSE)
 		{
 			if (_keepAlive)
 			{
@@ -140,12 +137,12 @@ bool ClientConnection::handleWrite()
 
 bool ClientConnection::wantsToRead() const
 {
-    return _state == READING_HEADERS || _state == READING_BODY;
+    return _state == READING_REQUEST && _request.getState() != HTTPRequest::COMPLETE;
 }
 
 bool ClientConnection::wantsToWrite() const
 {
-    return !_writeBuffer.empty() || _state == WRITING_RESPONSE;
+    return _state == SENDING_RESPONSE && _response.getState() != HTTPResponse::COMPLETE;
 }
 
 int ClientConnection::getFd() const
