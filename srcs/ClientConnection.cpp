@@ -34,17 +34,8 @@ ClientConnection::~ClientConnection()
 
 bool ClientConnection::handleRead()
 {
-	if (!_request.shouldKeepAlive())
-		_keepAlive = false;
-	if (_state == PROCESSING_CGI)
-		return handleCGIRead();
-	return handleClientRead();
-}
-
-bool	ClientConnection::handleClientRead()
-{
 	char buffer[4096];
-    
+
 	ssize_t bytesRead = read(_fd, buffer, sizeof(buffer));
 	if (bytesRead > 0)
 	{
@@ -54,14 +45,13 @@ bool	ClientConnection::handleClientRead()
 			_request.parse(_readBuffer);
 			if (_request.getState() == HTTPRequest::COMPLETE)
 			{
+				if (!_request.shouldKeepAlive())
+					_keepAlive = false;
 				if (_request.isCGI())
-				{
-					_state = PROCESSING_CGI;
 					setupCGI();
-				}
 				else
 				{
-					// Process request
+					//Process request
 					_state = SENDING_RESPONSE;
 				}
 			}
@@ -77,7 +67,7 @@ bool	ClientConnection::handleClientRead()
 		// Client closed connection -> EventLoop will handle removal of the epoll instance and the client instance through IOHnadler by returning false here.
 		return false;
 	}
-    return true;
+	return true;	
 }
 
 void	ClientConnection::setupCGI()
@@ -103,6 +93,7 @@ void	ClientConnection::setupCGI()
 		//close unused pipe ends
 		//set up IOHandlers for pipes
 		//set up signal handler for SIGCHLD
+		_state = PROCESSING_CGI;
 	}
 	else
 	{
