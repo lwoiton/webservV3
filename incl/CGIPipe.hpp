@@ -6,7 +6,7 @@
 /*   By: lwoiton <lwoiton@student.42prague.com>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/30 18:39:58 by lwoiton           #+#    #+#             */
-/*   Updated: 2024/12/17 16:42:11 by lwoiton          ###   ########.fr       */
+/*   Updated: 2024/12/20 12:13:48 by lwoiton          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -35,8 +35,6 @@ public:
 
     // CGI-specific functions
     static int createPipe(bool isReadEnd, int *_fd, int *_childFd);
-    void closeReadEnd();
-    void closeWriteEnd();
     bool isClosed() const { return _closed; }
 
 private:
@@ -45,6 +43,9 @@ private:
     ClientConnection& _parent;
     bool _isReadEnd;
     bool _closed;
+
+	// Helper function to close the pipe
+	void closePipe();
     
     // No copying
     CGIPipe(const CGIPipe&);

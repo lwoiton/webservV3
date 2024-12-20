@@ -6,7 +6,7 @@
 /*   By: lwoiton <lwoiton@student.42prague.com>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/30 18:38:02 by lwoiton           #+#    #+#             */
-/*   Updated: 2024/12/17 15:04:25 by lwoiton          ###   ########.fr       */
+/*   Updated: 2024/12/20 15:19:38 by lwoiton          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -46,7 +46,22 @@ class ClientConnection : public IOHandler
 		const std::string& getIP() const;
 		uint16_t getPort() const;
 		std::string getInfo() const;
+		HTTPRequest& getRequest();
+		HTTPResponse& getResponse();
 
+		// CGI handling
+		struct CGI
+		{
+			CGIPipe*			inputPipe;
+			CGIPipe*			outputPipe;
+			
+			pid_t				childPid;
+			size_t				writeOffset;
+			//Add TempFile for CGI output later
+		};	
+		CGI&		getCGI();
+		// Queue the response for sending
+		void		queueResponse();
 	private:
 		enum State {
 			READING_REQUEST,
@@ -76,21 +91,10 @@ class ClientConnection : public IOHandler
 		HTTPResponse	_response;
 		size_t          _bytesWritten;
 		
-		// CGI handling
-		struct CGI
-		{
-			CGIPipe*			inputPipe;
-			CGIPipe*			outputPipe;
-			
-			pid_t				childPid;
-			std::vector<char>	inputBuffer;
-			std::vector<char>	outputBuffer;
-		} 				_cgi;
+		CGI				_cgi;
 		void	setupCGI();
 		
-		// Helper methods
-		bool	handleClientRead();
-		bool	handleCGIRead();
+		// Helper methods;
 		void	reset();
 
 		// Prevent copying

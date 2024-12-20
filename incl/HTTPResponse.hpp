@@ -6,7 +6,7 @@
 /*   By: lwoiton <lwoiton@student.42prague.com>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/22 22:27:27 by lwoiton           #+#    #+#             */
-/*   Updated: 2024/12/18 17:37:09 by lwoiton          ###   ########.fr       */
+/*   Updated: 2024/12/20 13:39:53 by lwoiton          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -40,8 +40,9 @@ class HTTPResponse
 		void		deleteHeader(const std::string& key);
 		void		setBody(const std::vector<char> &body);
 		std::vector<char>& getBody() const;
+		void		appendToBody(const char* data, size_t len);
 		std::string getHttpDate();
-		std::string	serialize() const;
+		std::vector<char>	serialize() const;
 		size_t		getBodySize() const;
 		void		reset();
 		int			getStatus() const;

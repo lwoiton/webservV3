@@ -6,7 +6,7 @@
 /*   By: lwoiton <lwoiton@student.42prague.com>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/23 01:13:09 by lwoiton           #+#    #+#             */
-/*   Updated: 2024/12/18 17:36:53 by lwoiton          ###   ########.fr       */
+/*   Updated: 2024/12/20 14:32:28 by lwoiton          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,14 +18,13 @@ HTTPResponse::HTTPResponse()
 	: _tempFile(NULL)
 	, _usingTempFile(false)
 	, _readOffset(0)
+	, _bodySize(0)
 {
 	
 }
 
 HTTPResponse::~HTTPResponse()
 {
-	delete _tempFile;
-	_tempFile = NULL;
 }
 
 HTTPResponse::ResponseState	HTTPResponse::getState() const
@@ -53,74 +52,16 @@ void HTTPResponse::deleteHeader(const std::string& key)
 	_headers.erase(key);
 }
 
-/* void HTTPResponse::setBody(const std::string& body)
+void HTTPResponse::setBody(const std::vector<char>& body)
 {
     _body = body;
-    // Automatically set Content-Length header
-    std::stringstream ss;
-    ss << body.length();
-    _bodySize = body.length();
-	if (_statusCode != 204 && _statusCode >= 200)
-    	setHeader("Content-Length", ss.str());
-	setHeader("Date", getHttpDate());
-	setHeader("Server", "webserv/1.0");
-} */
-
-void	HTTPResponse::setBody(const std::vector<char> &body)
-{
-	if (body.length() > MEMORY_THRESHOLD)
-	{
-		_tempFile = new TempFile();
-		_tempFile->write(body.c_str(), body.size());
-		_usingTempFile = true;
-		_body.clear();
-	}
-	else
-	{
-		_body = body;
-	}
-	setHeader("Content-Length", toString(body.length()));
+    _bodySize = body.size();
 }
 
-// Get next chunk for sending
-std::vector<char> HTTPResponse::getNextChunk()
+void	HTTPResponse::appendToBody(const char* data, size_t len)
 {
-	std::vector<char> chunk;
-	
-	if (_usingTempFile)
-	{
-		char buffer[CHUNK_SIZE];
-		size_t bytesRead = _tempFile->read(buffer, CHUNK_SIZE);
-		if (bytesRead > 0) {
-			chunk.assign(buffer, buffer + bytesRead);
-		}
-	}
-	else if (!_body.empty())
-	{
-		size_t remaining = _body.length() - _readOffset;
-		size_t chunkSize = std::min(remaining, CHUNK_SIZE);
-		chunk.assign(_body.begin() + _readOffset, 
-					_body.begin() + _readOffset + chunkSize);
-		_readOffset += chunkSize;
-	}
-	
-	return chunk;
-}
-
-bool HTTPResponse::hasMoreData() const
-{
-	if (_usingTempFile)
-		return _readOffset < _bodySize;
-	return _readOffset < _body.length();
-}
-
-std::string	HTTPResponse::getBody() const
-{
-	if (_usingTempFile)
-	{
-		return std::string("Please implement retading from response body temp file!");
-	}
-	return _body;
+	_body.insert(_body.end(), data, data + len);
+	_bodySize += len;
 }
 
 size_t HTTPResponse::getBodySize() const
@@ -187,34 +128,44 @@ std::string HTTPResponse::getStatusText() const
 
 void	HTTPResponse::setEssentialHeaders()
 {
+	if (_statusCode != 204 && _statusCode >= 200)
+		setHeader("Content-Length", std::to_string(_bodySize));
 	setHeader("Date", getHttpDate());
 	setHeader("Server", "webserv/1.0");
 }
 
-std::string HTTPResponse::serialize() const
+std::vector<char> HTTPResponse::serialize() const
 {
-    std::stringstream response;
-
+    // First create the header string
+    std::stringstream headerStream;
+    
     // Status line
-    response << "HTTP/1.1 " << _statusCode << " " << getStatusText() << "\r\n";
-
+    headerStream << "HTTP/1.1 " << _statusCode << " " << getStatusText() << "\r\n";
+    
     // Headers
-    std::map<std::string, std::string>::const_iterator it;
-    for (it = _headers.begin(); it != _headers.end(); ++it)
-    {
-        response << it->first << ": " << it->second << "\r\n";
+    for (std::map<std::string, std::string>::const_iterator it = _headers.begin(); 
+         it != _headers.end(); ++it) {
+        headerStream << it->first << ": " << it->second << "\r\n";
     }
-
-    // Empty line separating headers from body
-    response << "\r\n";
-
-    // Body
-    if (!_body.empty())
-    {
-        response << _body;
-    }
-
-    return response.str();
+    
+    // Empty line separating headers and body
+    headerStream << "\r\n";
+    
+    std::string headerString = headerStream.str();
+    
+    // Create the final response vector
+    std::vector<char> response;
+    
+    // Reserve space for both headers and body to avoid reallocations
+    response.reserve(headerString.size() + _body.size());
+    
+    // Copy headers
+    response.insert(response.end(), headerString.begin(), headerString.end());
+    
+    // Copy body
+    response.insert(response.end(), _body.begin(), _body.end());
+    
+    return response;
 }
 
 void HTTPResponse::print() const 
@@ -238,8 +189,8 @@ void HTTPResponse::print() const
     ss << "\n--- Body ---\n";
     if (contentType.find("text/html") != std::string::npos)
     {
-        ss << _body << "\n";
-    }
+		ss << std::string(_body.begin(), _body.end()) << "\n";
+	}
     else 
     {
         ss << "[" << _bodySize << " bytes of " << contentType << "]\n";

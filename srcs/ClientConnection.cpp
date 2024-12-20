@@ -6,7 +6,7 @@
 /*   By: lwoiton <lwoiton@student.42prague.com>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/30 19:46:31 by lwoiton           #+#    #+#             */
-/*   Updated: 2024/12/18 17:51:12 by lwoiton          ###   ########.fr       */
+/*   Updated: 2024/12/20 15:16:53 by lwoiton          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -104,26 +104,29 @@ void	ClientConnection::setupCGI()
 
 bool ClientConnection::handleWrite()
 {
-	if (_writeBuffer.empty())
-		return true;
-	ssize_t bytesWritten = write(_fd, &_writeBuffer[0], _writeBuffer.size());
-	
-	if (bytesWritten > 0)
+    if (_writeBuffer.empty())
+        return true;
+        
+    ssize_t bytesWritten = write(_fd, 
+                                _writeBuffer.data(), 
+                                _writeBuffer.size());
+    
+    if (bytesWritten > 0)
 	{
-		_writeBuffer.erase(_writeBuffer.begin(), 
-							_writeBuffer.begin() + bytesWritten);
-		
-		if (_writeBuffer.empty() && _state == SENDING_RESPONSE)
+        _writeBuffer.erase(_writeBuffer.begin(), 
+                          _writeBuffer.begin() + bytesWritten);
+        
+        if (_writeBuffer.empty())
 		{
-			if (_keepAlive)
+            if (_keepAlive)
 			{
-				reset();
-				return true; // Keep Connection open
-			}
-			return false;  // Close connection
-		}
-	}
-	return true;
+                reset();
+                return true;
+            }
+            return false;  // Close connection
+        }
+    }
+    return true;
 }
 
 bool ClientConnection::wantsToRead() const
@@ -134,6 +137,21 @@ bool ClientConnection::wantsToRead() const
 bool ClientConnection::wantsToWrite() const
 {
     return _state == SENDING_RESPONSE && _response.getState() != HTTPResponse::COMPLETE;
+}
+
+HTTPRequest& ClientConnection::getRequest()
+{
+	return _request;
+}
+
+HTTPResponse& ClientConnection::getResponse()
+{
+	return _response;
+}
+
+void ClientConnection::queueResponse() {
+    std::vector<char> serialized = _response.serialize();
+    _writeBuffer = serialized;  // Replace existing write buffer with new data
 }
 
 int ClientConnection::getFd() const
@@ -156,6 +174,11 @@ std::string ClientConnection::getInfo() const
     std::stringstream ss;
     ss << _clientIP << ":" << _clientPort;
     return ss.str();
+}
+
+ClientConnection::CGI& ClientConnection::getCGI()
+{
+	return _cgi;
 }
 
 void ClientConnection::reset()

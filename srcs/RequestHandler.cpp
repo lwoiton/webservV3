@@ -1,18 +1,55 @@
-#include "RequestProcessor.hpp"
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   RequestHandler.cpp                                 :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: lwoiton <lwoiton@student.42prague.com>     +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2024/12/20 15:28:04 by lwoiton           #+#    #+#             */
+/*   Updated: 2024/12/20 15:55:26 by lwoiton          ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
 
-/* Constructor */
-RequestProcessor::RequestProcessor(const std::vector<Config::ServerConfig> &servers)
-	: _usersDB(UserDatabase())
-	, _mimeTypes(MIMEType())
+// RequestHandler.cpp
+#include "RequestHandler.hpp"
+#include <unistd.h>
+#include <sys/wait.h>
+#include <fcntl.h>
+
+// RequestHandler.cpp
+RequestHandler* RequestHandler::_instance = NULL;
+
+void RequestHandler::initialize(const std::vector<Config::ServerConfig>& config)
 {
-    this->createRoutingTable(servers);
+    if (_instance == NULL) {
+        _instance = new RequestHandler(config);
+    }
 }
 
-// Modify your processRequest to use the new matching
-HTTPResponse RequestProcessor::processRequest(HTTPRequest &req)
+RequestHandler* RequestHandler::getInstance()
 {
-    HTTPResponse response;
-    
+    if (_instance == NULL) {
+        throw std::runtime_error("RequestHandler not initialized");
+    }
+    return _instance;
+}
+
+void RequestHandler::cleanup() {
+    delete _instance;
+    _instance = NULL;
+}
+
+RequestHandler::RequestHandler(const std::vector<Config::ServerConfig>& config)
+    : _config(config)
+    , _mimeTypes()
+{
+    // Initialize routing table and other constant data
+    createRoutingTable(config);
+}
+
+HTTPResponse RequestHandler::handleRequest(const HTTPRequest& req) const
+{
+	HTTPResponse response;  
     try {
 		// Find and set the best route (saved in HTTPRequest since it a Request related data)
 		findAndSetBestRoute(req);
@@ -24,12 +61,9 @@ HTTPResponse RequestProcessor::processRequest(HTTPRequest &req)
             throw HTTPError(405, "Method Not Allowed");
         }
 
-        if (req.isCGI()) {
-            std::cout << "\033[1;33m" << "CGI request detected" << "\033[1;33m" << std::endl;
-            // insert EOF to end of body
-            // req.appendToBody(std::vector<char>(1, 0));
-            CGIProcessor _CGIProc(req);
-            return _CGIProc.handleCGIRequest();
+        if (req.isCGI())
+		{
+            return handleCGIRequest(req, route);
         }
 
         // Handle request based on method
@@ -57,7 +91,7 @@ HTTPResponse RequestProcessor::processRequest(HTTPRequest &req)
     }
     return response;
 }
- 
+
 HTTPResponse RequestProcessor::handleGETRequest(HTTPRequest &req)
 {
     const Config::Route* route = req.getMatchedRoute();
@@ -245,6 +279,7 @@ HTTPResponse RequestProcessor::handleFileUpload(HTTPRequest &req, const Config::
         throw;
     }
 }
+
 
 std::string	RequestProcessor::decodeComponentPOST(const std::string& enocoded)
 {

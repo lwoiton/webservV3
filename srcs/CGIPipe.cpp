@@ -6,7 +6,7 @@
 /*   By: lwoiton <lwoiton@student.42prague.com>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/30 19:32:14 by lwoiton           #+#    #+#             */
-/*   Updated: 2024/12/18 16:23:34 by lwoiton          ###   ########.fr       */
+/*   Updated: 2024/12/20 15:19:46 by lwoiton          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -30,10 +30,13 @@ int CGIPipe::createPipe(bool isReadEnd, int *_fd, int *_childFd)
 		throw std::runtime_error("Failed to create pipe");
 	
 	// Store the end we want to return in _fd and the other in _otherEnd
-	if (isReadEnd) {
+	if (isReadEnd) // OutputPipe
+	{
         *_fd = fds[0];       // Read end
         *_childFd = fds[1]; // Write end
-	} else {
+	}
+	else // InputPipe
+	{
         *_fd = fds[1];       // Write end
         *_childFd = fds[0]; // Read end
 	}
@@ -46,16 +49,12 @@ int CGIPipe::createPipe(bool isReadEnd, int *_fd, int *_childFd)
 
 CGIPipe::~CGIPipe()
 {
-    if (!_closed && _fd != -1) {
-        close(_fd);
-        _fd = -1;
-        _closed = true;
-    }
+	closePipe();
 }
 
 bool CGIPipe::handleRead()
 {
-    if (!_isReadEnd || _closed)
+    if (_isReadEnd || _closed)
         return true;
 
     char buffer[4096];
@@ -63,41 +62,42 @@ bool CGIPipe::handleRead()
     
     if (bytesRead > 0) {
         // Add to parent's response body
-        _parent.appendResponseBody(buffer, bytesRead);
+        _parent.getResponse().appendToBody(buffer, bytesRead);
         return true;
     }
     else if (bytesRead == 0) {
         // EOF - close pipe
-        _closed = true;
-        close(_fd);
-        _fd = -1;
-        _parent.handleCGIComplete();
+		closePipe();
+		//parent queque the response
+        _parent.queueResponse();
         return true;
     }
-    
     return true;
 }
 
-bool CGIPipe::handleWrite()
+
+
+bool CGIPipe::handleWrite() //Writing into the child process
 {
     if (_isReadEnd || _closed)
         return true;
 
     // Get data from parent's request body at current offset
-    const std::vector<char>& body = _parent.getRequestBody();
-    size_t offset = _parent.getCGIWriteOffset();
+    const std::vector<char>& body = _parent.getRequest().getBody();
+    size_t offset = _parent.getCGI().writeOffset;
     size_t remaining = body.size() - offset;
 
-    if (remaining > 0) {
+    if (remaining > 0)
+	{
         ssize_t written = write(_fd, body.data() + offset, remaining);
-        if (written > 0) {
-            _parent.advanceCGIWriteOffset(written);
-            if (offset + written == body.size()) {
+        if (written > 0)
+		{
+            _parent.getCGI().writeOffset += written;
+            if (offset + written == body.size())
+			{
                 // Done writing - close pipe
-                _closed = true;
-                close(_fd);
-                _fd = -1;
-                _parent.handleCGIInputComplete();
+                closePipe();
+                
             }
         }
     }
@@ -107,19 +107,30 @@ bool CGIPipe::handleWrite()
 
 bool CGIPipe::wantsToRead() const
 {
-    return _isReadEnd && !_closed;
+	if (!_isReadEnd || _closed)
+		return false;
+	return true;
 }
 
 bool CGIPipe::wantsToWrite() const
 {
-    if (_isReadEnd || _closed ||)
+    if (_isReadEnd || _closed)
         return false;
-    
-    const std::vector<char>& body = _parent.getRequestBody();
-    return _parent.getCGIWriteOffset() < body.size();
+    const std::vector<char>& body = _parent.getRequest().getBody();
+    return _parent.getCGI().writeOffset < body.size();
 }
 
 int CGIPipe::getFd() const
 {
     return _fd;
+}
+
+void	CGIPipe::closePipe()
+{
+	if (!_closed && _fd != -1)
+	{
+		close(_fd);
+		_fd = -1;
+		_closed = true;
+	}
 }
